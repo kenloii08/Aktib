@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Spent Shurva</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: url("Active_Wallpaper.png");
+            background-size: cover;       
+            background-position: center; 
+            background-repeat: no-repeat; 
+            background-attachment: fixed;
+        }
+
+        .wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: baseline;
+            gap: 20px;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            margin: 20px;
+            padding: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 1rem;
+        }
+
+        .button_a {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .button_b {
+            background-color: #26237d;
+            color: white;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .button_a:hover {
+            background-color: #218838;
+        }
+
+        .button_b:hover {
+            background-color: #191663;
+        }
+        .button_clear {
+            background-color: #ff4d4d;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            width: 40%;
+            float: right;
+        }
+        .button_clear:hover {
+            background-color:rgba(250, 0, 0, 1.0); ;
+        }
+
+        .history {
+            width: 100%;
+        }
+
+        .history ul {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .history ul li {
+            background-color: #e9ecef;
+            margin: 5px 0;
+            padding: 8px;
+            border-radius: 5px;
+            color: black;
+        }
+
+        .toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: #ff4d4d;
+            color: white;
+            text-align: center;
+            border-radius: 5px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            top: 30px;
+            font-size: 17px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+            transform: translateX(-50%);
+        }
+
+        .toast.show {
+            visibility: visible;
+            animation: fadein 0.3s, fadeout 1s 2.5s;
+        }
+
+        @keyframes fadein {
+            from {top: 0; opacity: 0;}
+            to {top: 30px; opacity: 1;}
+        }
+
+        @keyframes fadeout {
+            from {top: 30px; opacity: 1;}
+            to {top: 0; opacity: 0;}
+        }
+
+        @media (min-width: 768px) {
+            .wrapper {
+                flex-direction: row;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="container">
+        <h2>Time Duration Adder</h2>
+        <label for="timeInput">Enter Time Durations (comma separated, e.g., "<b>5m, 4m, 1h40m</b>"):</label>
+        <input type="text" id="timeInput" placeholder="Enter time durations" required>
+        <button class="button_a" onclick="addTimes()">Calculate Total Time</button>
+        <h3 id="result"></h3>
+
+        <h2>Time Spent Calculator</h2>
+        <label for="startTime">Start Time:</label>
+        <input type="time" id="startTime" required>
+        <label for="endTime">End Time:</label>
+        <input type="time" id="endTime" required>
+        <button class="button_b" onclick="calculateTimeSpent()">Calculate Time Spent</button>
+        <h3 id="timeSpentResult"></h3>
+    </div>
+
+    <div class="container history">
+        <button class="button_clear" onclick="clearHistory()">Clear History</button>
+        <h2>Calculations</h2>
+        <ul id="historyList"></ul>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    function parseTime(input) {
+        let totalSeconds = 0;
+        const hourMatch = input.match(/(\d+)h/);  
+        const minuteMatch = input.match(/(\d+)m/); 
+        const timeMatch = input.match(/(\d+):(\d+)/);
+
+        if (hourMatch) totalSeconds += parseInt(hourMatch[1]) * 3600; 
+        if (minuteMatch) totalSeconds += parseInt(minuteMatch[1]) * 60; 
+        if (timeMatch) totalSeconds += parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60; 
+
+        return totalSeconds;
+    }
+
+    function isValidTimeInput(input) {
+        const regex = /^(\d+h(\d+m)?|\d+m|\d{1,2}:\d{2})$/;
+        return input.split(',').every(time => regex.test(time.trim()));
+    }
+
+    function showToast(message) {
+        const toast = document.getElementById("toast");
+        toast.innerText = message;
+        toast.className = "toast show";
+        setTimeout(() => {
+            toast.className = toast.className.replace("show", "");
+        }, 3000);
+    }
+
+    function addTimes() {
+        const timeInput = document.getElementById('timeInput').value;
+        
+        if (!isValidTimeInput(timeInput)) {
+            showToast("Invalid input format! Use formats like 5m or 1h40m.");
+            return;
+        }
+
+        const timeArray = timeInput.split(',').map(time => time.trim());
+        let totalSeconds = 0;
+
+        timeArray.forEach(time => {
+            totalSeconds += parseTime(time);
+        });
+
+        const hours = Math.floor(totalSeconds / 3600);
+        const minutes = Math.floor((totalSeconds % 3600) / 60);
+
+        const result = `Total Duration: ${hours > 0 ? hours + ' hours, ' : ''}${minutes} minutes.`;
+        updateHistory(result);
+    }
+
+    function calculateTimeSpent() {
+        const startTime = document.getElementById("startTime").value;
+        const endTime = document.getElementById("endTime").value;
+
+        if (!startTime || !endTime) {
+            showToast("Please enter both start and end times.");
+            return;
+        }
+
+        const start = new Date(`1970-01-01T${startTime}:00`);
+        const end = new Date(`1970-01-01T${endTime}:00`);
+
+        const diff = (end - start) / (1000 * 60); 
+
+        if (diff < 0) {
+            showToast("End time must be later than start time.");
+        } else {
+            const hours = Math.floor(diff / 60);
+            const minutes = diff % 60;
+            const result = `Total Time Spent = ${hours} hours and ${minutes} minutes.`;
+            updateHistory(result);
+        }
+    }
+
+    function updateHistory(result) {
+        const historyList = document.getElementById('historyList');
+        const newEntry = document.createElement('li');
+        newEntry.innerText = result;
+
+        if (result.includes("Total Duration")) {
+            newEntry.style.backgroundColor = "#ccffcc";  
+        } else if (result.includes("Total Time Spent")) {
+            newEntry.style.backgroundColor = "#e6e6ff";  
+        } else {
+            newEntry.style.backgroundColor = "#e9ecef"; 
+        }
+        historyList.appendChild(newEntry);
+    }
+    function clearHistory() {
+        const historyList = document.getElementById('historyList');
+        historyList.innerHTML = '';
+    }
+</script>
+
+</body>
+</html>
